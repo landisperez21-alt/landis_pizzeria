@@ -1,0 +1,118 @@
+{% extends "layouts/base.html" %}
+{% load humanize %}
+
+{% block title %}Reportes · {{ BRAND.name }}{% endblock %}
+{% block encabezado %}Reportes{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div>
+        <h2>Reportes de ventas</h2>
+        <p class="sub">Del {{ desde }} al {{ hasta }}</p>
+    </div>
+    <form class="buscador no-print" method="get">
+        <input type="date" name="desde" value="{{ desde }}" class="form-control">
+        <input type="date" name="hasta" value="{{ hasta }}" class="form-control">
+        <button class="btn btn-oro"><i class="fas fa-filter me-1"></i> Aplicar</button>
+    </form>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="metrica oro">
+            <div class="etiqueta">Ventas cobradas</div>
+            <div class="valor">{{ BRAND.currency }} {{ total_ventas|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metrica rojo">
+            <div class="etiqueta">Pedidos</div>
+            <div class="valor">{{ pedidos_total }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metrica ok">
+            <div class="etiqueta">Pagos registrados</div>
+            <div class="valor">{{ cantidad_pagos }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metrica">
+            <div class="etiqueta">Ticket promedio</div>
+            <div class="valor">
+                {% if cantidad_pagos %}{{ BRAND.currency }} {{ total_ventas|floatformat:2 }}{% else %}{{ BRAND.currency }} 0.00{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card p-3 h-100">
+            <h6 class="mb-3">Ventas por metodo de pago</h6>
+            <table class="tabla-aurora">
+                <thead><tr><th>Metodo</th><th>Nro.</th><th class="text-end">Total</th></tr></thead>
+                <tbody>
+                {% for m in por_metodo %}
+                <tr><td>{{ m.metodo__nombre }}</td><td>{{ m.n }}</td><td class="text-end">{{ BRAND.currency }} {{ m.total|floatformat:2 }}</td></tr>
+                {% empty %}
+                <tr><td colspan="3" class="tabla-vacia">Sin pagos en el rango.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card p-3 h-100">
+            <h6 class="mb-3">Pedidos por tipo</h6>
+            <table class="tabla-aurora">
+                <thead><tr><th>Tipo</th><th class="text-end">Nro.</th></tr></thead>
+                <tbody>
+                {% for t in por_tipo_pedido %}
+                <tr><td>{{ t.tipo }}</td><td class="text-end">{{ t.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="tabla-vacia">Sin pedidos.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card p-3 h-100">
+            <h6 class="mb-3">Delivery por repartidor</h6>
+            <table class="tabla-aurora">
+                <thead><tr><th>Repartidor</th><th class="text-end">Entregas</th></tr></thead>
+                <tbody>
+                {% for r in por_repartidor %}
+                <tr><td>{{ r.nombre|default:"Sin asignar" }}</td><td class="text-end">{{ r.entregas }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="tabla-vacia">Sin entregas.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card p-3">
+            <h6 class="mb-3">Productos mas vendidos</h6>
+            <div class="tabla-scroll">
+                <table class="tabla-aurora">
+                    <thead><tr><th>#</th><th>Producto</th><th class="text-end">Cantidad</th><th class="text-end">Ingreso</th></tr></thead>
+                    <tbody>
+                    {% for p in top_productos %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ p.nombre }}</td>
+                        <td class="text-end">{{ p.cantidad }}</td>
+                        <td class="text-end">{{ BRAND.currency }} {{ p.ingreso|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="tabla-vacia">Sin datos en el rango seleccionado.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

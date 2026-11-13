@@ -1,0 +1,94 @@
+{% extends "layouts/base.html" %}
+{% load humanize %}
+
+{% block title %}Caja · {{ BRAND.name }}{% endblock %}
+{% block encabezado %}Caja{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div>
+        <h2>Caja</h2>
+        <p class="sub">Apertura, cobros y cierre de tu turno</p>
+    </div>
+    <a href="{% url 'payments:lista' %}" class="btn btn-contorno"><i class="fas fa-cash-register me-1"></i> Ver pagos</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        {% if actual %}
+        <div class="total-panel mb-3">
+            <div class="fila"><span>Estado</span><span class="badge-estado activo">Caja abierta</span></div>
+            <div class="fila"><span>Apertura</span><span>{{ actual.fecha_apertura|date:"d/m/Y H:i" }}</span></div>
+            <div class="fila"><span>Monto inicial</span><span>{{ BRAND.currency }} {{ actual.monto_inicial|floatformat:2 }}</span></div>
+            <div class="fila"><span>Pagos cobrados</span><span>{{ actual.pagos.count }}</span></div>
+            <div class="fila grande"><span>Total cobrado</span><span>{{ BRAND.currency }} {{ actual.total_cobrado|floatformat:2 }}</span></div>
+            <div class="fila"><span>Efectivo esperado</span><span>{{ BRAND.currency }} {{ actual.monto_inicial|add:actual.total_cobrado|floatformat:2 }}</span></div>
+        </div>
+        <div class="card p-3">
+            <h6 class="mb-3"><i class="fas fa-lock text-warning me-2"></i>Cerrar caja</h6>
+            <form method="post" action="{% url 'payments:cerrar' actual.pk %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Monto final en caja</label>
+                    {{ form_cierre.monto_final }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Observaciones</label>
+                    {{ form_cierre.observaciones }}
+                </div>
+                <button class="btn btn-rojo w-100"><i class="fas fa-lock me-1"></i> Cerrar caja</button>
+            </form>
+        </div>
+        {% else %}
+        <div class="card p-3">
+            <h6 class="mb-3"><i class="fas fa-unlock text-warning me-2"></i>Abrir caja</h6>
+            <form method="post" action="{% url 'payments:abrir' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Monto inicial</label>
+                    {{ form_apertura.monto_inicial }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Observaciones</label>
+                    {{ form_apertura.observaciones }}
+                </div>
+                <button class="btn btn-oro w-100"><i class="fas fa-unlock me-1"></i> Abrir caja</button>
+                <p class="small mb-0 mt-2" style="color:var(--texto-suave)">Los pagos que registres se asociaran a esta sesion de caja.</p>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">Historial de sesiones</div>
+            <div class="tabla-scroll">
+                <table class="tabla-aurora">
+                    <thead>
+                        <tr><th>#</th><th>Responsable</th><th>Apertura</th><th>Cierre</th><th class="text-end">Inicial</th><th class="text-end">Final</th><th class="text-end">Cobrado</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for s in sesiones %}
+                        <tr>
+                            <td>{{ s.pk }}</td>
+                            <td>{{ s.usuario }}</td>
+                            <td>{{ s.fecha_apertura|date:"d/m/Y H:i" }}</td>
+                            <td>{{ s.fecha_cierre|date:"d/m/Y H:i"|default:"—" }}</td>
+                            <td class="text-end">{{ BRAND.currency }} {{ s.monto_inicial|floatformat:2 }}</td>
+                            <td class="text-end">{{ BRAND.currency }} {{ s.monto_final|floatformat:2 }}</td>
+                            <td class="text-end">{{ BRAND.currency }} {{ s.total_cobrado|floatformat:2 }}</td>
+                            <td>
+                                {% if s.abierta %}<span class="badge-estado activo">Abierta</span>
+                                {% else %}<span class="badge-estado inactivo">Cerrada</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="tabla-vacia"><i class="fas fa-vault fa-2x d-block mb-2"></i> Aun no hay sesiones de caja.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

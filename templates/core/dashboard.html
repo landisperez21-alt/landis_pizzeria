@@ -1,0 +1,139 @@
+{% extends "layouts/base.html" %}
+{% load humanize %}
+
+{% block title %}Panel · {{ BRAND.name }}{% endblock %}
+{% block encabezado %}Panel de control{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div>
+        <h2>Bienvenido, {{ request.user.nombre_corto }}</h2>
+        <p class="sub">Resumen de la operacion de la pizzeria</p>
+    </div>
+    <a href="{% url 'orders:crear' %}" class="btn btn-rojo"><i class="fas fa-plus me-1"></i> Nuevo pedido</a>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-xl-3 col-sm-6">
+        <div class="metrica rojo">
+            <i class="fas fa-receipt icono"></i>
+            <div class="etiqueta">Pedidos de hoy</div>
+            <div class="valor">{{ pedidos_hoy }}</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="metrica oro">
+            <i class="fas fa-sack-dollar icono"></i>
+            <div class="etiqueta">Ventas de hoy</div>
+            <div class="valor">{{ BRAND.currency }} {{ ventas_hoy|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="metrica ok">
+            <i class="fas fa-fire-burner icono"></i>
+            <div class="etiqueta">Pedidos activos</div>
+            <div class="valor">{{ pedidos_activos }}</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="metrica">
+            <i class="fas fa-users icono"></i>
+            <div class="etiqueta">Clientes</div>
+            <div class="valor">{{ clientes_total }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-8">
+        <div class="card p-3 h-100">
+            <h6 class="mb-3"><i class="fas fa-chart-area text-warning me-2"></i>Ventas de los ultimos 7 dias</h6>
+            <canvas id="graficoVentas" height="110"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card p-3 h-100">
+            <h6 class="mb-3"><i class="fas fa-chart-pie text-warning me-2"></i>Pedidos por estado</h6>
+            <canvas id="graficoEstados" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card p-3 h-100">
+            <h6 class="mb-3"><i class="fas fa-ranking-star text-warning me-2"></i>Productos mas vendidos</h6>
+            {% for p in top_productos %}
+            <div class="lista-item">
+                <span>{{ p.nombre }}</span>
+                <span class="chip" style="background:rgba(224,160,32,.18);color:var(--oro-claro)">{{ p.cantidad }} und</span>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0">Aun no hay ventas registradas.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card p-3 h-100">
+            <h6 class="mb-3"><i class="fas fa-triangle-exclamation text-warning me-2"></i>Insumos por agotarse</h6>
+            {% for i in insumos_bajos %}
+            <div class="lista-item">
+                <span>{{ i.nombre }}</span>
+                <span class="chip" style="background:rgba(193,18,31,.2);color:#ff9aa2">{{ i.stock }} {{ i.unidad }}</span>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0">Todo el inventario esta en nivel adecuado.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card p-3 h-100">
+            <h6 class="mb-3"><i class="fas fa-clock-rotate-left text-warning me-2"></i>Ultimos pedidos</h6>
+            {% for p in pedidos_recientes %}
+            <div class="lista-item">
+                <a href="{% url 'orders:detalle' p.pk %}">{{ p.codigo }}</a>
+                <span class="badge-estado" style="background:rgba(224,160,32,.15);color:var(--oro-claro)">{{ p.get_estado_display }}</span>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0">Sin pedidos.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{{ serie_labels|json_script:"serie-labels" }}
+{{ serie_valores|json_script:"serie-valores" }}
+{{ estados_labels|json_script:"estados-labels" }}
+{{ estados_valores|json_script:"estados-valores" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const labels = JSON.parse(document.getElementById("serie-labels").textContent);
+  const valores = JSON.parse(document.getElementById("serie-valores").textContent);
+  const estadosL = JSON.parse(document.getElementById("estados-labels").textContent);
+  const estadosV = JSON.parse(document.getElementById("estados-valores").textContent);
+  const grid = "rgba(255,255,255,.06)";
+
+  new Chart(document.getElementById("graficoVentas"), {
+    type: "line",
+    data: { labels: labels, datasets: [{
+      label: "Ventas (S/)", data: valores, borderColor: "#e0a020", backgroundColor: "rgba(224,160,32,.15)",
+      fill: true, tension: .35, pointBackgroundColor: "#c1121f"
+    }]},
+    options: { plugins: { legend: { labels: { color: "#b8a99b" } } },
+      scales: { x: { grid: { color: grid }, ticks: { color: "#b8a99b" } },
+                y: { grid: { color: grid }, ticks: { color: "#b8a99b" } } } }
+  });
+
+  new Chart(document.getElementById("graficoEstados"), {
+    type: "doughnut",
+    data: { labels: estadosL, datasets: [{
+      data: estadosV,
+      backgroundColor: ["#c1121f", "#e0a020", "#f2c14e", "#2a9d8f", "#4d9de0", "#8b0f18", "#6c757d"]
+    }]},
+    options: { plugins: { legend: { position: "bottom", labels: { color: "#b8a99b", boxWidth: 12 } } } }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "layouts/base.html" %}
+{% load humanize %}
+
+{% block title %}{{ titulo }} · {{ BRAND.name }}{% endblock %}
+{% block encabezado %}{{ pedido.codigo }}{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div>
+        <h2>Pedido {{ pedido.codigo }}</h2>
+        <p class="sub">{{ pedido.cliente.nombre }} · {{ pedido.get_tipo_display }} · {{ pedido.creado_en|date:"d/m/Y H:i" }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'orders:comanda' pedido.pk %}" class="btn btn-contorno"><i class="fas fa-print me-1"></i> Comanda</a>
+        <a href="{% url 'orders:editar' pedido.pk %}" class="btn btn-contorno"><i class="fas fa-pen me-1"></i> Editar</a>
+        <a href="{% url 'orders:lista' %}" class="btn btn-contorno"><i class="fas fa-arrow-left me-1"></i> Volver</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Productos del pedido</span>
+                <span class="badge-estado" style="background:rgba(224,160,32,.18);color:var(--oro-claro)">{{ pedido.get_estado_display }}</span>
+            </div>
+            <div class="tabla-scroll">
+                <table class="tabla-aurora">
+                    <thead>
+                        <tr><th>Producto</th><th>Tamano</th><th class="text-center">Cant.</th><th class="text-end">P. unit.</th><th>Extras</th><th class="text-end">Subtotal</th><th class="text-end no-print"></th></tr>
+                    </thead>
+                    <tbody>
+                        {% for d in detalles %}
+                        <tr>
+                            <td class="fw-bold">{{ d.producto.nombre }}{% if d.notas %}<div class="small" style="color:var(--texto-suave)">{{ d.notas }}</div>{% endif %}</td>
+                            <td>{{ d.tamano.nombre|default:"—" }}</td>
+                            <td class="text-center">{{ d.cantidad }}</td>
+                            <td class="text-end">{{ BRAND.currency }} {{ d.precio_unitario|floatformat:2 }}</td>
+                            <td>
+                                {% for e in d.extras.all %}<span class="chip" style="background:rgba(224,160,32,.12);color:var(--oro-claro)">{{ e.ingrediente.nombre }}</span> {% empty %}—{% endfor %}
+                            </td>
+                            <td class="text-end fw-bold">{{ BRAND.currency }} {{ d.subtotal_cache|floatformat:2 }}</td>
+                            <td class="text-end no-print">
+                                <form method="post" action="{% url 'orders:eliminar-item' pedido.pk d.pk %}" onsubmit="return confirm('¿Quitar este producto del pedido?');">
+                                    {% csrf_token %}
+                                    <button class="btn-accion" title="Quitar"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="tabla-vacia"><i class="fas fa-pizza-slice fa-2x d-block mb-2"></i> Aun no hay productos. Agrega el primero abajo.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card p-3 no-print">
+            <h6 class="mb-3"><i class="fas fa-plus text-warning me-2"></i>Agregar producto</h6>
+            <form method="post" action="{% url 'orders:agregar-item' pedido.pk %}">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">Producto</label>
+                        {{ form_item.producto }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tamano (solo pizzas)</label>
+                        {{ form_item.tamano }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cantidad</label>
+                        {{ form_item.cantidad }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Notas del producto</label>
+                        {{ form_item.notas }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Ingredientes extra</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            {% for ing in ingredientes %}
+                            <label class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" name="extras" value="{{ ing.pk }}">
+                                <span class="form-check-label small">{{ ing.nombre }} (+{{ BRAND.currency }} {{ ing.precio_extra|floatformat:2 }})</span>
+                            </label>
+                            {% empty %}
+                            <span class="small" style="color:var(--texto-suave)">No hay ingredientes extra activos.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="small" style="color:var(--texto-suave)">Precio estimado: <span id="precio-estimado" class="fw-bold" style="color:var(--oro-claro)">—</span></div>
+                    <button class="btn btn-rojo"><i class="fas fa-plus me-1"></i> Agregar al pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="total-panel mb-3">
+            <div class="fila"><span>Subtotal</span><span>{{ BRAND.currency }} {{ pedido.subtotal|floatformat:2 }}</span></div>
+            <div class="fila"><span>Delivery</span><span>{{ BRAND.currency }} {{ pedido.costo_delivery|floatformat:2 }}</span></div>
+            <div class="fila"><span>Descuento</span><span>- {{ BRAND.currency }} {{ pedido.descuento|floatformat:2 }}</span></div>
+            <div class="fila grande"><span>Total</span><span>{{ BRAND.currency }} {{ pedido.total|floatformat:2 }}</span></div>
+            <div class="fila mt-2"><span>Pagado</span><span>{{ BRAND.currency }} {{ pedido.total_pagado|floatformat:2 }}</span></div>
+            <div class="fila"><span>Saldo</span>
+                <span>
+                    {% if pedido.saldo <= 0 %}<span class="badge-estado activo">Pagado</span>
+                    {% else %}<span class="fw-bold" style="color:#ff9aa2">{{ BRAND.currency }} {{ pedido.saldo|floatformat:2 }}</span>{% endif %}
+                </span>
+            </div>
+            {% if pedido.saldo > 0 %}
+            <a href="{% url 'payments:crear' %}?pedido={{ pedido.pk }}" class="btn btn-oro w-100 mt-3"><i class="fas fa-cash-register me-1"></i> Registrar pago</a>
+            {% endif %}
+        </div>
+
+        <div class="card p-3 mb-3 no-print">
+            <h6 class="mb-3"><i class="fas fa-arrows-rotate text-warning me-2"></i>Cambiar estado</h6>
+            <form method="post" action="{% url 'orders:cambiar-estado' pedido.pk %}">
+                {% csrf_token %}
+                <select name="estado" class="form-select mb-2">
+                    {% for valor, etiqueta in estados %}
+                    <option value="{{ valor }}" {% if pedido.estado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-rojo w-100"><i class="fas fa-check me-1"></i> Actualizar estado</button>
+                <p class="small mb-0 mt-2" style="color:var(--texto-suave)">Al marcar como entregado se descuentan los insumos de la receta.</p>
+            </form>
+        </div>
+
+        <div class="card p-3">
+            <h6 class="mb-2">Datos de entrega</h6>
+            <div class="lista-item"><span>Tipo</span><span>{{ pedido.get_tipo_display }}</span></div>
+            {% if pedido.mesa %}<div class="lista-item"><span>Mesa</span><span>{{ pedido.mesa }}</span></div>{% endif %}
+            {% if pedido.direccion %}<div class="lista-item"><span>Direccion</span><span class="text-end">{{ pedido.direccion }}</span></div>{% endif %}
+            <div class="lista-item"><span>Repartidor</span><span>{{ pedido.repartidor|default:"Sin asignar" }}</span></div>
+            <div class="lista-item"><span>Registrado por</span><span>{{ pedido.usuario|default:"—" }}</span></div>
+            {% if pedido.notas %}<div class="mt-2 small" style="color:var(--texto-suave)"><i class="fas fa-note-sticky me-1"></i>{{ pedido.notas }}</div>{% endif %}
+        </div>
+    </div>
+</div>
+
+{{ productos_json|json_script:"datos-productos" }}
+{{ tamanos_json|json_script:"datos-tamanos" }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const selProducto = document.getElementById("id_producto");
+    const selTamano = document.getElementById("id_tamano");
+    const inpCantidad = document.getElementById("id_cantidad");
+    const salida = document.getElementById("precio-estimado");
+    if (!selProducto || !salida) return;
+
+    const productos = {};
+    JSON.parse(document.getElementById("datos-productos").textContent).forEach(function (p) {
+      productos[p.pk] = { base: parseFloat(p.base), pizza: p.pizza };
+    });
+    const tamanos = {};
+    JSON.parse(document.getElementById("datos-tamanos").textContent).forEach(function (t) {
+      tamanos[t.pk] = parseFloat(t.factor);
+    });
+
+    function calcular() {
+      const prod = productos[selProducto.value];
+      if (!prod) { salida.textContent = "—"; return; }
+      let unitario = prod.base;
+      if (prod.pizza && selTamano && selTamano.value) {
+        const f = tamanos[selTamano.value];
+        if (f) unitario = unitario * f;
+      }
+      const cantidad = parseInt(inpCantidad.value || "1", 10) || 1;
+      salida.textContent = "S/ " + (unitario * cantidad).toFixed(2);
+    }
+    [selProducto, selTamano, inpCantidad].forEach(function (el) {
+      if (el) { el.addEventListener("change", calcular); el.addEventListener("input", calcular); }
+    });
+    calcular();
+  })();
+</script>
+{% endblock %}

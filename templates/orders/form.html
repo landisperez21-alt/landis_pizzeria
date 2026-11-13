@@ -1,0 +1,72 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ titulo }} · {{ BRAND.name }}{% endblock %}
+{% block encabezado %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div>
+        <h2>{{ titulo }}</h2>
+        <p class="sub">Cliente, tipo de entrega y montos del pedido</p>
+    </div>
+    <a href="{% url 'orders:lista' %}" class="btn btn-contorno"><i class="fas fa-arrow-left me-1"></i> Volver</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card p-4">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div class="alerta error mb-3">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Cliente *</label>
+                        {{ form.cliente }}
+                        {% for e in form.cliente.errors %}<div class="small text-danger">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo de pedido *</label>
+                        {{ form.tipo }}
+                        {% for e in form.tipo.errors %}<div class="small text-danger">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Mesa</label>
+                        {{ form.mesa }}
+                        <div class="small" style="color:var(--texto-suave)">Obligatorio solo para pedidos en mesa.</div>
+                        {% for e in form.mesa.errors %}<div class="small text-danger">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Repartidor</label>
+                        {{ form.repartidor }}
+                        {% for e in form.repartidor.errors %}<div class="small text-danger">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Direccion de entrega</label>
+                        {{ form.direccion }}
+                        <div class="small" style="color:var(--texto-suave)">Obligatoria para delivery.</div>
+                        {% for e in form.direccion.errors %}<div class="small text-danger">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Costo de delivery</label>
+                        {{ form.costo_delivery }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Descuento</label>
+                        {{ form.descuento }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Notas</label>
+                        {{ form.notas }}
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{% url 'orders:lista' %}" class="btn btn-contorno">Cancelar</a>
+                    <button class="btn btn-rojo px-4"><i class="fas fa-floppy-disk me-1"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

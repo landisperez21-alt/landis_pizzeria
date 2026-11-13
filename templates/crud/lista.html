@@ -1,0 +1,95 @@
+{% extends "layouts/base.html" %}
+{% load humanize %}
+
+{% block title %}{{ titulo }} · {{ BRAND.name }}{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div>
+        <h2>{{ titulo }}</h2>
+        <p class="sub">{{ filas|length }} registro(s) en esta pagina</p>
+    </div>
+    <div class="buscador no-print">
+        <form class="d-flex gap-2" method="get">
+            <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Buscar...">
+            <button class="btn btn-contorno"><i class="fas fa-magnifying-glass"></i></button>
+        </form>
+        {% if permitir_crear %}
+        <a href="{% url url_nombre|add:'-crear' %}" class="btn btn-rojo">
+            <i class="fas fa-plus me-1"></i> Nuevo {{ singular|lower }}
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="tabla-scroll">
+        <table class="tabla-aurora">
+            <thead>
+                <tr>
+                    {% for col in columnas %}<th>{{ col.label }}</th>{% endfor %}
+                    <th class="text-end no-print">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in filas %}
+                <tr>
+                    {% for celda in fila.celdas %}
+                    <td>
+                        {% if celda.tipo == 'moneda' %}
+                            {{ BRAND.currency }} {{ celda.valor|floatformat:2 }}
+                        {% elif celda.tipo == 'numero' %}
+                            {{ celda.valor|floatformat:"-3" }}
+                        {% elif celda.tipo == 'fecha' %}
+                            {{ celda.valor|date:"d/m/Y H:i" }}
+                        {% elif celda.tipo == 'bool' %}
+                            {% if celda.valor %}
+                                <span class="badge-estado activo">{{ celda.col.texto_true|default:"Activo" }}</span>
+                            {% else %}
+                                <span class="badge-estado inactivo">{{ celda.col.texto_false|default:"Inactivo" }}</span>
+                            {% endif %}
+                        {% elif celda.tipo == 'badge' %}
+                            <span class="chip">{{ celda.valor }}</span>
+                        {% else %}
+                            {{ celda.valor|default:"—" }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td class="text-end no-print">
+                        {% if permitir_editar %}
+                        <a href="{% url url_nombre|add:'-editar' fila.objeto.pk %}" class="btn-accion" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </a>
+                        {% endif %}
+                        {% if permitir_alternar %}
+                        <form method="post" action="{% url url_nombre|add:'-alternar' fila.objeto.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn-accion" title="Activar / desactivar">
+                                <i class="fas fa-power-off"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ columnas|length|add:1 }}" class="tabla-vacia">
+                    <i class="fas fa-inbox fa-2x d-block mb-2"></i> No hay registros para mostrar.
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if pagina.paginator.num_pages > 1 %}
+<div class="paginacion">
+    {% if pagina.has_previous %}
+    <a href="?page={{ pagina.previous_page_number }}{% if q %}&q={{ q }}{% endif %}"><i class="fas fa-chevron-left"></i></a>
+    {% endif %}
+    <span class="actual">{{ pagina.number }} / {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}
+    <a href="?page={{ pagina.next_page_number }}{% if q %}&q={{ q }}{% endif %}"><i class="fas fa-chevron-right"></i></a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

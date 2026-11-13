@@ -1,0 +1,71 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comanda {{ pedido.codigo }} · {{ BRAND.name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: "Courier New", monospace; color: #000; margin: 0; padding: 1.2rem; background: #fff; }
+        .comanda { max-width: 340px; margin: 0 auto; }
+        .centro { text-align: center; }
+        h1 { font-size: 1.15rem; margin: 0; letter-spacing: 1px; }
+        .marca { font-size: 0.75rem; margin-bottom: 0.6rem; }
+        hr { border: none; border-top: 1px dashed #000; margin: 0.6rem 0; }
+        .meta { font-size: 0.8rem; display: flex; justify-content: space-between; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        th, td { text-align: left; padding: 0.2rem 0; vertical-align: top; }
+        th { border-bottom: 1px solid #000; }
+        td.cant { width: 2rem; }
+        td.imp { text-align: right; }
+        .extras { font-size: 0.72rem; padding-left: 2rem; font-style: italic; }
+        .total { display: flex; justify-content: space-between; font-weight: bold; font-size: 0.95rem; }
+        .acciones { max-width: 340px; margin: 1.2rem auto 0; text-align: center; }
+        .btn { border: 1px solid #000; background: #fff; padding: 0.5rem 1rem; cursor: pointer; font-family: inherit; border-radius: 6px; margin: 0 0.2rem; }
+        @media print { .acciones { display: none; } body { padding: 0; } }
+    </style>
+</head>
+<body>
+<div class="comanda">
+    <div class="centro">
+        <h1>DON LANDINIS</h1>
+        <div class="marca">Pizzeria artesanal · {{ BRAND.phone }}</div>
+    </div>
+    <hr>
+    <div class="meta"><span><strong>{{ pedido.codigo }}</strong></span><span>{{ pedido.creado_en|date:"d/m/Y H:i" }}</span></div>
+    <div class="meta"><span>{{ pedido.cliente.nombre }}</span><span>{{ pedido.get_tipo_display }}</span></div>
+    {% if pedido.mesa %}<div class="meta"><span>Mesa: {{ pedido.mesa }}</span><span></span></div>{% endif %}
+    {% if pedido.direccion %}<div style="font-size:0.78rem">{{ pedido.direccion }}</div>{% endif %}
+    <hr>
+    <table>
+        <thead><tr><th class="cant">Cant</th><th>Producto</th><th class="imp">Imp.</th></tr></thead>
+        <tbody>
+            {% for d in detalles %}
+            <tr>
+                <td class="cant">{{ d.cantidad }}x</td>
+                <td>{{ d.producto.nombre }}{% if d.tamano %} ({{ d.tamano.nombre }}){% endif %}</td>
+                <td class="imp">{{ d.subtotal_cache|floatformat:2 }}</td>
+            </tr>
+            {% if d.notas %}<tr><td></td><td colspan="2" class="extras">* {{ d.notas }}</td></tr>{% endif %}
+            {% for e in d.extras.all %}<tr><td></td><td colspan="2" class="extras">+ {{ e.ingrediente.nombre }}</td></tr>{% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+    <hr>
+    <div class="total"><span>Subtotal</span><span>S/ {{ pedido.subtotal|floatformat:2 }}</span></div>
+    {% if pedido.costo_delivery %}<div class="total"><span>Delivery</span><span>S/ {{ pedido.costo_delivery|floatformat:2 }}</span></div>{% endif %}
+    {% if pedido.descuento %}<div class="total"><span>Descuento</span><span>- S/ {{ pedido.descuento|floatformat:2 }}</span></div>{% endif %}
+    <div class="total" style="font-size:1.1rem"><span>TOTAL</span><span>S/ {{ pedido.total|floatformat:2 }}</span></div>
+    <hr>
+    {% if pedido.notas %}<div style="font-size:0.78rem">Notas: {{ pedido.notas }}</div><hr>{% endif %}
+    <div class="centro" style="font-size:0.75rem">¡Gracias por su preferencia!</div>
+</div>
+
+<div class="acciones">
+    <button class="btn" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+    <a class="btn" href="{% url 'orders:detalle' pedido.pk %}">Volver</a>
+</div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Mi perfil · {{ BRAND.name }}{% endblock %}
+{% block encabezado %}Mi perfil{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div><h2>Mi perfil</h2><p class="sub">Actualiza tus datos personales</p></div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card p-4">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="avatar" style="width:64px;height:64px;font-size:1.6rem">{{ request.user.nombre_corto|slice:":1"|upper }}</div>
+                <div>
+                    <div class="fw-bold text-white fs-5">{{ request.user.nombre_corto }}</div>
+                    <span class="chip" style="background:rgba(224,160,32,.15);color:var(--oro-claro)">{{ request.user.get_rol_display }}</span>
+                </div>
+            </div>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="row g-3">
+                    {% for field in form %}
+                    <div class="col-md-6">
+                        {% if field.field.widget.input_type == 'checkbox' %}
+                        <div class="form-check mt-4">{{ field }}<label class="form-check-label">{{ field.label }}</label></div>
+                        {% else %}
+                        <label class="form-label">{{ field.label }}</label>{{ field }}
+                        {% endif %}
+                        {% for error in field.errors %}<div class="small text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-end mt-4">
+                    <button class="btn btn-rojo px-4"><i class="fas fa-floppy-disk me-1"></i> Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

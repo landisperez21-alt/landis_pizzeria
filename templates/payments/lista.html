@@ -1,0 +1,62 @@
+{% extends "layouts/base.html" %}
+{% load humanize %}
+
+{% block title %}Pagos · {{ BRAND.name }}{% endblock %}
+{% block encabezado %}Pagos{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div>
+        <h2>Pagos</h2>
+        <p class="sub">Total registrado (filtro actual): {{ BRAND.currency }} {{ total|floatformat:2 }}</p>
+    </div>
+    <div class="buscador no-print">
+        <form class="d-flex gap-2 flex-wrap" method="get">
+            <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Pedido u operacion...">
+            <select name="estado" class="form-select">
+                <option value="">Todos</option>
+                <option value="registrado" {% if estado == 'registrado' %}selected{% endif %}>Registrado</option>
+                <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
+            </select>
+            <button class="btn btn-contorno"><i class="fas fa-filter"></i></button>
+        </form>
+        <a href="{% url 'payments:crear' %}" class="btn btn-rojo"><i class="fas fa-plus me-1"></i> Registrar pago</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="tabla-scroll">
+        <table class="tabla-aurora">
+            <thead>
+                <tr><th>Fecha</th><th>Pedido</th><th>Metodo</th><th>Referencia</th><th>Cobrado por</th><th class="text-end">Monto</th><th>Estado</th><th class="text-end no-print"></th></tr>
+            </thead>
+            <tbody>
+                {% for p in pagos %}
+                <tr>
+                    <td>{{ p.fecha_pago|date:"d/m/Y H:i" }}</td>
+                    <td class="fw-bold"><a href="{% url 'orders:detalle' p.pedido_id %}">{{ p.pedido.codigo }}</a></td>
+                    <td><span class="chip" style="background:rgba(224,160,32,.15);color:var(--oro-claro)">{{ p.metodo.nombre }}</span></td>
+                    <td>{{ p.referencia_operacion|default:"—" }}</td>
+                    <td>{{ p.usuario|default:"—" }}</td>
+                    <td class="text-end">{{ BRAND.currency }} {{ p.monto|floatformat:2 }}</td>
+                    <td>
+                        {% if p.estado == 'registrado' %}<span class="badge-estado activo">Registrado</span>
+                        {% else %}<span class="badge-estado inactivo">Anulado</span>{% endif %}
+                    </td>
+                    <td class="text-end no-print">
+                        {% if p.estado == 'registrado' %}
+                        <form method="post" action="{% url 'payments:anular' p.pk %}" onsubmit="return confirm('¿Anular este pago?');">
+                            {% csrf_token %}
+                            <button class="btn-accion" title="Anular"><i class="fas fa-ban"></i></button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="tabla-vacia"><i class="fas fa-cash-register fa-2x d-block mb-2"></i> No hay pagos registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

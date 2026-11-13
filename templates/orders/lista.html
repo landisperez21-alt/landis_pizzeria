@@ -1,0 +1,70 @@
+{% extends "layouts/base.html" %}
+{% load humanize %}
+
+{% block title %}Pedidos · {{ BRAND.name }}{% endblock %}
+{% block encabezado %}Pedidos{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div>
+        <h2>Pedidos</h2>
+        <p class="sub">{{ pedidos|length }} pedido(s) mostrados</p>
+    </div>
+    <div class="buscador no-print">
+        <form class="d-flex gap-2 flex-wrap" method="get">
+            <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Codigo o cliente...">
+            <select name="estado" class="form-select">
+                <option value="">Todos los estados</option>
+                {% for valor, etiqueta in estados %}
+                <option value="{{ valor }}" {% if estado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+            <select name="tipo" class="form-select">
+                <option value="">Todos los tipos</option>
+                {% for valor, etiqueta in tipos %}
+                <option value="{{ valor }}" {% if tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-contorno"><i class="fas fa-filter"></i></button>
+        </form>
+        <a href="{% url 'orders:crear' %}" class="btn btn-rojo"><i class="fas fa-plus me-1"></i> Nuevo pedido</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="tabla-scroll">
+        <table class="tabla-aurora">
+            <thead>
+                <tr>
+                    <th>Codigo</th><th>Cliente</th><th>Tipo</th><th>Estado</th>
+                    <th>Repartidor</th><th>Creado</th><th class="text-end">Total</th><th class="text-end">Saldo</th>
+                    <th class="text-end no-print">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pedidos %}
+                <tr>
+                    <td class="fw-bold"><a href="{% url 'orders:detalle' p.pk %}">{{ p.codigo }}</a></td>
+                    <td>{{ p.cliente.nombre }}</td>
+                    <td><span class="chip" style="background:rgba(224,160,32,.15);color:var(--oro-claro)">{{ p.get_tipo_display }}</span></td>
+                    <td><span class="badge-estado" style="background:rgba(224,160,32,.18);color:var(--oro-claro)">{{ p.get_estado_display }}</span></td>
+                    <td>{{ p.repartidor|default:"—" }}</td>
+                    <td>{{ p.creado_en|date:"d/m/Y H:i" }}</td>
+                    <td class="text-end">{{ BRAND.currency }} {{ p.total|floatformat:2 }}</td>
+                    <td class="text-end">
+                        {% if p.saldo <= 0 %}<span class="badge-estado activo">Pagado</span>
+                        {% else %}{{ BRAND.currency }} {{ p.saldo|floatformat:2 }}{% endif %}
+                    </td>
+                    <td class="text-end no-print">
+                        <a href="{% url 'orders:detalle' p.pk %}" class="btn-accion" title="Ver detalle"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'orders:comanda' p.pk %}" class="btn-accion" title="Comanda"><i class="fas fa-print"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9" class="tabla-vacia"><i class="fas fa-receipt fa-2x d-block mb-2"></i> No hay pedidos que coincidan con el filtro.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

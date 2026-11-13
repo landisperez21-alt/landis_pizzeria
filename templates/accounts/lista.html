@@ -1,0 +1,54 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Usuarios · {{ BRAND.name }}{% endblock %}
+{% block encabezado %}Usuarios del sistema{% endblock %}
+
+{% block contenido %}
+<div class="page-head">
+    <div>
+        <h2>Usuarios</h2>
+        <p class="sub">Personal con acceso al sistema</p>
+    </div>
+    <div class="buscador">
+        <form class="d-flex gap-2" method="get">
+            <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Buscar...">
+            <button class="btn btn-contorno"><i class="fas fa-magnifying-glass"></i></button>
+        </form>
+        <a href="{% url 'accounts:crear' %}" class="btn btn-rojo"><i class="fas fa-plus me-1"></i> Nuevo usuario</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="tabla-scroll">
+        <table class="tabla-aurora">
+            <thead>
+                <tr><th>Usuario</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Telefono</th><th>Estado</th><th class="text-end">Acciones</th></tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                <tr>
+                    <td class="fw-bold">{{ u.username }}</td>
+                    <td>{{ u.get_full_name|default:"—" }}</td>
+                    <td>{{ u.email|default:"—" }}</td>
+                    <td><span class="chip" style="background:rgba(224,160,32,.15);color:var(--oro-claro)">{{ u.get_rol_display }}</span></td>
+                    <td>{{ u.telefono|default:"—" }}</td>
+                    <td>
+                        {% if u.is_active %}<span class="badge-estado activo">Activo</span>
+                        {% else %}<span class="badge-estado inactivo">Inactivo</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'accounts:editar' u.pk %}" class="btn-accion"><i class="fas fa-pen"></i></a>
+                        <form method="post" action="{% url 'accounts:alternar' u.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn-accion"><i class="fas fa-power-off"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="tabla-vacia">No hay usuarios.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
